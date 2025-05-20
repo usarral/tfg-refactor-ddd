@@ -1,0 +1,53 @@
+version: '3'
+services:
+  db:
+    image: mongo:latest
+    container_name: db
+    networks:
+      - app-network
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_DB}
+    volumes:
+      - ./data/db:/data/db
+    # ports:
+    #   - 27017:27017
+    restart: always
+  backend:
+    image: node:lts
+    container_name: backend
+    networks:
+      - app-network
+    volumes:
+      - ./TFG_Backend:/app
+    environment:
+      - JWT_SECRET=${JWT_SECRET}
+    working_dir: /app
+    command: bash -c "npm install && npm run dev"
+
+    ports:
+      - 3000:3000
+    depends_on:
+      - db
+    restart: always
+  frontend:
+    image: node:lts
+    container_name: frontend
+    networks:
+      - app-network
+    environment:
+      - VITE_BACKEND_URL=${BACKEND_URL}
+      - FRONTEND_PORT=${FRONTEND_PORT}
+    working_dir: /app
+    volumes:
+      - ./TFG_Frontend:/app
+    command: bash -c "npm install && npm run dev -- --host"
+    ports:
+      - ${FRONTEND_PORT:-8080}:${FRONTEND_PORT:-8080}
+    depends_on:
+      - backend
+    restart: always
+
+networks:
+  app-network:
